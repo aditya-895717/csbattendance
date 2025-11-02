@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-202 Attendance System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            color: white;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            transition: transform 0.3s;
+        }
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
+        .student-card {
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .student-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left-color: #667eea;
+        }
+        .student-card.present {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+        }
+        .student-card.absent {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .student-card.leave {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .animate-in {
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .date-badge {
+            background: white;
+            color: #667eea;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .history-card {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .history-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        }
+        .content-section {
+            min-height: calc(100vh - 56px);
+            padding: 2rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Form -->
+    <div id="loginBox" class="auth-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="card auth-card animate-in">
+                        <div class="card-body p-5">
+                            <h2 class="text-center mb-4 gradient-text fw-bold">
+                                <i class="bi bi-person-check-fill"></i> CampusConnectSR
+                            </h2>
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input type="text" class="form-control" id="loginUsername" placeholder="Enter username">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                        <input type="password" class="form-control" id="loginPassword" placeholder="Enter password">
+                                    </div>
+                                </div>
+                                <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+                                <button type="submit" class="btn btn-gradient w-100 py-2 fw-semibold">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login
+                                </button>
+                            </form>
+                            <div class="text-center mt-3">
+                                <small>Don't have an account? <a href="#" class="text-decoration-none fw-semibold" onclick="showRegister()">Register here</a></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerBox" class="auth-container d-none">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="card auth-card animate-in">
+                        <div class="card-body p-5">
+                            <h2 class="text-center mb-4 gradient-text fw-bold">
+                                <i class="bi bi-person-plus-fill"></i> Register
+                            </h2>
+                            <form id="registerForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input type="text" class="form-control" id="regUsername" placeholder="Choose username">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                        <input type="password" class="form-control" id="regPassword" placeholder="Choose password">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Confirm Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                        <input type="password" class="form-control" id="regConfirmPassword" placeholder="Confirm password">
+                                    </div>
+                                </div>
+                                <div id="registerError" class="alert alert-danger d-none" role="alert"></div>
+                                <button type="submit" class="btn btn-gradient w-100 py-2 fw-semibold">
+                                    <i class="bi bi-person-check"></i> Register
+                                </button>
+                            </form>
+                            <div class="text-center mt-3">
+                                <small>Already have an account? <a href="#" class="text-decoration-none fw-semibold" onclick="showLogin()">Login here</a></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance System -->
+    <div id="attendanceBox" class="d-none">
+        <!-- Navbar -->
+        <nav class="navbar navbar-custom navbar-dark navbar-expand-lg">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1">
+                    <i class="bi bi-clipboard-check"></i> CampusConnectSR
+                </span>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="showSection('mark')">
+                                <i class="bi bi-pencil-square"></i> Mark Attendance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('history')">
+                                <i class="bi bi-clock-history"></i> History
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('stats')">
+                                <i class="bi bi-bar-chart-fill"></i> Statistics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-outline-light ms-2" onclick="logout()">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mark Attendance Section -->
+        <div id="markSection" class="content-section">
+            <div class="container">
+                <!-- Date Selection -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Select Date:</label>
+                                <input type="date" class="form-control" id="attendanceDate" onchange="loadAttendanceForDate()">
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button class="btn btn-gradient me-2" onclick="saveAttendance()">
+                                    <i class="bi bi-save"></i> Save Attendance
+                                </button>
+                                <div class="btn-group">
+                                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> Export
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="generatePDF()"><i class="bi bi-file-earmark-pdf text-danger"></i> Export PDF</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportAllExcel()"><i class="bi bi-file-earmark-excel text-success"></i> Export All to Excel</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportPresentExcel()"><i class="bi bi-check-circle text-success"></i> Present Students</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportAbsentExcel()"><i class="bi bi-x-circle text-danger"></i> Absent Students</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportLeaveExcel()"><i class="bi bi-calendar-x text-warning"></i> Leave Students</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card summary-card">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-people-fill fs-1"></i>
+                                <h3 class="mt-2 mb-0" id="totalStudents">60</h3>
+                                <p class="mb-0">Total Students</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card summary-card">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-check-circle-fill fs-1"></i>
+                                <h3 class="mt-2 mb-0" id="presentCount">0</h3>
+                                <p class="mb-0">Present</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card summary-card">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-x-circle-fill fs-1"></i>
+                                <h3 class="mt-2 mb-0" id="absentCount">0</h3>
+                                <p class="mb-0">Absent</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card summary-card">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-calendar-x-fill fs-1"></i>
+                                <h3 class="mt-2 mb-0" id="leaveCount">0</h3>
+                                <p class="mb-0">On Leave</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Box -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search by name or roll number..." onkeyup="searchStudents()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student List -->
+                <div id="studentList" class="row g-3"></div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="historySection" class="content-section d-none">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h3 class="text-white mb-4"><i class="bi bi-clock-history"></i> Attendance History</h3>
+                        <div id="historyList"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="bi bi-funnel"></i> Filter by Date Range</h5>
+                                <div class="mb-3">
+                                    <label class="form-label">From:</label>
+                                    <input type="date" class="form-control" id="filterFromDate">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">To:</label>
+                                    <input type="date" class="form-control" id="filterToDate">
+                                </div>
+                                <button class="btn btn-gradient w-100" onclick="filterHistory()">
+                                    <i class="bi bi-search"></i> Filter
+                                </button>
+                                <button class="btn btn-outline-secondary w-100 mt-2" onclick="loadHistory()">
+                                    <i class="bi bi-arrow-clockwise"></i> Show All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div id="statsSection" class="content-section d-none">
+            <div class="container">
+                <h3 class="text-white mb-4"><i class="bi bi-bar-chart-fill"></i> Attendance Statistics</h3>
+                <div id="statsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const students = [
+            { roll: '2404850100001', name: 'AADITY VISHWAKARMA' },
+            { roll: '2404850100008', name: 'ABHINAV VERMA' },
+            { roll: '2404850100012', name: 'ABHISHEK KUMAR VERMA' },
+            { roll: '2404850100013', name: 'ABHISHEK MAURYA' },
+            { roll: '2404850100014', name: 'ABHISHEK SINGH' },
+            { roll: '2404850100017', name: 'ADARSH' },
+            { roll: '2404850100019', name: 'ADARSH SHUKLA' },
+            { roll: '2404850100026', name: 'AHMAD HASAN KHAN' },
+            { roll: '2404850100028', name: 'AKHAND PRATAP SINGH' },
+            { roll: '2404850100030', name: 'AKSHAT DIVYA SINGH' },
+            { roll: '2404850100031', name: 'AMAN YADAV' },
+            { roll: '2404850100032', name: 'AMAY SINGH' },
+            { roll: '2404850100033', name: 'AMIT YADAV' },
+            { roll: '2404850100038', name: 'ANKET MAURYA' },
+            { roll: '2404850100041', name: 'ANSHJI TIWARI' },
+            { roll: '2404850100043', name: 'ANSHIKA BARANWAL' },
+            { roll: '2404850100045', name: 'ANSHIKA YADAV' },
+            { roll: '2404850100048', name: 'ANURAG YADAV' },
+            { roll: '2404850100049', name: 'ANUSHKA' },
+            { roll: '2404850100054', name: 'ASHEESH KUMAR' },
+            { roll: '2404850100056', name: 'ASHWANI SHARMA' },
+            { roll: '2404850100060', name: 'AVINASH YADAV' },
+            { roll: '2404850100063', name: 'AYUSH PAL' },
+            { roll: '2404850100070', name: 'DIVYARTH DIXIT' },
+            { roll: '2404850100076', name: 'HARSH PATHAK' },
+            { roll: '2404850100079', name: 'HIMANSHU KUMAR SINGH' },
+            { roll: '2404850100081', name: 'HIMANSHU YADAV' },
+            { roll: '2404850100082', name: 'IMTIYAJ AHMAD' },
+            { roll: '2404850100092', name: 'KRISHNA GUPTA' },
+            { roll: '2404850100093', name: 'KRISHNA KANHAIYA TRIPATHI' },
+            { roll: '2404850100096', name: 'KUNAL SINGH' },
+            { roll: '2404850100097', name: 'KUNDAN MISHRA' },
+            { roll: '2404850100100', name: 'MANEESH KUMAR PRAJAPATI' },
+            { roll: '2404850100110', name: 'MUKTHESHWAR VISHWAKARMA' },
+            { roll: '2404850100111', name: 'MUSKAN' },
+            { roll: '2404850100116', name: 'NITESH KUMAR' },
+            { roll: '2404850100118', name: 'NITIN SHUKLA' },
+            { roll: '2404850100122', name: 'PAWAN VERMA' },
+            { roll: '2404850100124', name: 'PRADEEP PRAJAPATI' },
+            { roll: '2404850100126', name: 'PRANJALI SINGH' },
+            { roll: '2404850100127', name: 'PRINCE SINGH' },
+            { roll: '2404850100130', name: 'RAJ' },
+            { roll: '2404850100131', name: 'RAJ BHARTI' },
+            { roll: '2404850100137', name: 'RAVI KUMAR' },
+            { roll: '2404850100141', name: 'RITESH VERMA' },
+            { roll: '2404850100143', name: 'RUPESH KUMAR GUPTA' },
+            { roll: '2404850100146', name: 'SACHIN BHARTI' },
+            { roll: '2404850100150', name: 'SAHIL' },
+            { roll: '2404850100157', name: 'SANGRAM SINGH' },
+            { roll: '2404850100158', name: 'SANJAY VISHWAKARMA' },
+            { roll: '2404850100160', name: 'SAURABH PANDEY' },
+            { roll: '2404850100162', name: 'SAURAV PANKAJ SINGH' },
+            { roll: '2404850100163', name: 'SAVITRI PAL' },
+            { roll: '2404850100167', name: 'SHIVAM PRAJAPATI' },
+            { roll: '2404850100168', name: 'SHIVANK PAL' },
+            { roll: '2404850100169', name: 'SHRADHA' },
+            { roll: '2404850100173', name: 'SHWETA YADAV' },
+            { roll: '2404850100174', name: 'SHYAM ANUJ DUBEY' },
+            { roll: '2404850100177', name: 'SUDHANSHU SHUKLA' },
+            { roll: '2404850100178', name: 'SUMIT KUMAR GUPTA' }
+        ];
+
+        let currentAttendance = {};
+        let attendanceHistory = {};
+        let users = {};
+        let currentDate = '';
+
+        function initializeAttendance() {
+            const attendance = {};
+            students.forEach(student => {
+                attendance[student.roll] = null;
+            });
+            return attendance;
+        }
+
+        function loadUsers() {
+            const savedUsers = sessionStorage.getItem('users');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            }
+        }
+
+        function saveUsers() {
+            sessionStorage.setItem('users', JSON.stringify(users));
+        }
+
+        function loadAttendanceHistory() {
+            const saved = sessionStorage.getItem('attendanceHistory');
+            if (saved) {
+                attendanceHistory = JSON.parse(saved);
+            }
+        }
+
+        function saveAttendanceHistory() {
+            sessionStorage.setItem('attendanceHistory', JSON.stringify(attendanceHistory));
+        }
+
+        loadUsers();
+        loadAttendanceHistory();
+
+        function showRegister() {
+            document.getElementById('loginBox').classList.add('d-none');
+            document.getElementById('registerBox').classList.remove('d-none');
+            document.getElementById('registerError').classList.add('d-none');
+            return false;
+        }
+
+        function showLogin() {
+            document.getElementById('registerBox').classList.add('d-none');
+            document.getElementById('loginBox').classList.remove('d-none');
+            document.getElementById('loginError').classList.add('d-none');
+            return false;
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const errorEl = document.getElementById('registerError');
+
+            if (!username || !password || !confirmPassword) {
+                errorEl.textContent = 'All fields are required';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            if (users[username]) {
+                errorEl.textContent = 'Username already exists';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            users[username] = password;
+            saveUsers();
+            alert('Registration successful! Please login.');
+            showLogin();
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorEl.textContent = 'All fields are required';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            if (!users[username] || users[username] !== password) {
+                errorEl.textContent = 'Invalid username or password';
+                errorEl.classList.remove('d-none');
+                return;
+            }
+
+            sessionStorage.setItem('loggedInUser', username);
+            document.getElementById('loginBox').classList.add('d-none');
+            document.getElementById('attendanceBox').classList.remove('d-none');
+            initializeApp();
+        });
+
+        function initializeApp() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('attendanceDate').value = today;
+            currentDate = today;
+            loadAttendanceForDate();
+            renderStudents();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('loggedInUser');
+            document.getElementById('attendanceBox').classList.add('d-none');
+            document.getElementById('loginBox').classList.remove('d-none');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.getElementById('markSection').classList.add('d-none');
+            document.getElementById('historySection').classList.add('d-none');
+            document.getElementById('statsSection').classList.add('d-none');
+
+            if (section === 'mark') {
+                document.getElementById('markSection').classList.remove('d-none');
+                document.querySelectorAll('.nav-link')[0].classList.add('active');
+            } else if (section === 'history') {
+                document.getElementById('historySection').classList.remove('d-none');
+                document.querySelectorAll('.nav-link')[1].classList.add('active');
+                loadHistory();
+            } else if (section === 'stats') {
+                document.getElementById('statsSection').classList.remove('d-none');
+                document.querySelectorAll('.nav-link')[2].classList.add('active');
+                loadStatistics();
+            }
+        }
+
+        function loadAttendanceForDate() {
+            currentDate = document.getElementById('attendanceDate').value;
+            if (attendanceHistory[currentDate]) {
+                currentAttendance = {...attendanceHistory[currentDate]};
+            } else {
+                currentAttendance = initializeAttendance();
+            }
+            updateSummary();
+            renderStudents();
+        }
+
+        function saveAttendance() {
+            if (!currentDate) {
+                alert('Please select a date');
+                return;
+            }
+            attendanceHistory[currentDate] = {...currentAttendance};
+            saveAttendanceHistory();
+            alert('Attendance saved successfully for ' + new Date(currentDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }));
+        }
+
+        function markAttendance(roll, status) {
+            currentAttendance[roll] = status;
+            updateSummary();
+            renderStudents();
+        }
+
+        function updateSummary() {
+            let present = 0, absent = 0, leave = 0;
+            for (let roll in currentAttendance) {
+                if (currentAttendance[roll] === 'present') present++;
+                else if (currentAttendance[roll] === 'absent') absent++;
+                else if (currentAttendance[roll] === 'leave') leave++;
+            }
+            document.getElementById('presentCount').textContent = present;
+            document.getElementById('absentCount').textContent = absent;
+            document.getElementById('leaveCount').textContent = leave;
+        }
+
+        function renderStudents(filtered = students) {
+            const list = document.getElementById('studentList');
+            list.innerHTML = '';
+
+            filtered.forEach(student => {
+                const status = currentAttendance[student.roll];
+                const statusClass = status === 'present' ? 'present' : 
+                                  status === 'absent' ? 'absent' : 
+                                  status === 'leave' ? 'leave' : '';
+                
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4';
+                col.innerHTML = `
+                    <div class="card student-card ${statusClass} h-100">
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold">${student.name}</h6>
+                            <p class="card-text text-muted small mb-3">${student.roll}</p>
+                            <div class="btn-group w-100" role="group">
+                                                            <button class="btn btn-sm ${status === 'present' ? 'btn-success' : 'btn-outline-success'}" 
+                                        onclick="markAttendance('${student.roll}', 'present')">
+                                    <i class="bi bi-check-circle"></i> Present
+                                </button>
+                                <button class="btn btn-sm ${status === 'absent' ? 'btn-danger' : 'btn-outline-danger'}" 
+                                        onclick="markAttendance('${student.roll}', 'absent')">
+                                    <i class="bi bi-x-circle"></i> Absent
+                                </button>
+                                <button class="btn btn-sm ${status === 'leave' ? 'btn-warning' : 'btn-outline-warning'}" 
+                                        onclick="markAttendance('${student.roll}', 'leave')">
+                                    <i class="bi bi-calendar-x"></i> Leave
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(col);
+            });
+        }
+
+        function searchStudents() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = students.filter(s => 
+                s.name.toLowerCase().includes(query) || 
+                s.roll.includes(query)
+            );
+            renderStudents(filtered);
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const dateStr = new Date(currentDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            doc.setFontSize(18);
+            doc.text('B-202 Attendance Report', 14, 22);
+            doc.setFontSize(12);
+            doc.text(`Date: ${dateStr}`, 14, 32);
+            
+            const tableData = students.map(student => [
+                student.roll,
+                student.name,
+                currentAttendance[student.roll] || 'Not Marked'
+            ]);
+            
+            doc.autoTable({
+                head: [['Roll Number', 'Name', 'Status']],
+                body: tableData,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { fillColor: [102, 126, 234] },
+                alternateRowStyles: { fillColor: [245, 245, 245] }
+            });
+            
+            doc.save(`attendance_${currentDate}.pdf`);
+        }
+
+        function exportAllExcel() {
+            exportToExcel(students, 'All_Students');
+        }
+
+        function exportPresentExcel() {
+            const present = students.filter(s => currentAttendance[s.roll] === 'present');
+            exportToExcel(present, 'Present_Students');
+        }
+
+        function exportAbsentExcel() {
+            const absent = students.filter(s => currentAttendance[s.roll] === 'absent');
+            exportToExcel(absent, 'Absent_Students');
+        }
+
+        function exportLeaveExcel() {
+            const leave = students.filter(s => currentAttendance[s.roll] === 'leave');
+            exportToExcel(leave, 'Leave_Students');
+        }
+
+        function exportToExcel(data, sheetName) {
+            const excelData = data.map(student => ({
+                'Roll Number': student.roll,
+                'Name': student.name,
+                'Status': currentAttendance[student.roll] || 'Not Marked',
+                'Date': currentDate
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            XLSX.writeFile(wb, `${sheetName}_${currentDate}.xlsx`);
+        }
+
+        function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            
+            const dates = Object.keys(attendanceHistory).sort().reverse();
+            
+            if (dates.length === 0) {
+                historyList.innerHTML = '<div class="alert alert-info">No attendance history found</div>';
+                return;
+            }
+            
+            dates.forEach(date => {
+                const attendance = attendanceHistory[date];
+                let present = 0, absent = 0, leave = 0;
+                
+                for (let roll in attendance) {
+                    if (attendance[roll] === 'present') present++;
+                    else if (attendance[roll] === 'absent') absent++;
+                    else if (attendance[roll] === 'leave') leave++;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'card history-card mb-3';
+                card.onclick = () => viewHistoryDetails(date);
+                card.innerHTML = `
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h5 class="mb-0"><i class="bi bi-calendar3"></i> ${new Date(date).toLocaleDateString()}</h5>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <span class="badge bg-success fs-6">
+                                            <i class="bi bi-check-circle"></i> Present: ${present}
+                                        </span>
+                                    </div>
+                                    <div class="col-4">
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="bi bi-x-circle"></i> Absent: ${absent}
+                                        </span>
+                                    </div>
+                                    <div class="col-4">
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="bi bi-calendar-x"></i> Leave: ${leave}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                historyList.appendChild(card);
+            });
+        }
+
+        function viewHistoryDetails(date) {
+            document.getElementById('attendanceDate').value = date;
+            showSection('mark');
+            loadAttendanceForDate();
+        }
+
+        function filterHistory() {
+            const fromDate = document.getElementById('filterFromDate').value;
+            const toDate = document.getElementById('filterToDate').value;
+            
+            if (!fromDate || !toDate) {
+                alert('Please select both from and to dates');
+                return;
+            }
+            
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            
+            const dates = Object.keys(attendanceHistory)
+                .filter(date => date >= fromDate && date <= toDate)
+                .sort()
+                .reverse();
+            
+            if (dates.length === 0) {
+                historyList.innerHTML = '<div class="alert alert-warning">No records found for selected date range</div>';
+                return;
+            }
+            
+            dates.forEach(date => {
+                const attendance = attendanceHistory[date];
+                let present = 0, absent = 0, leave = 0;
+                
+                for (let roll in attendance) {
+                    if (attendance[roll] === 'present') present++;
+                    else if (attendance[roll] === 'absent') absent++;
+                    else if (attendance[roll] === 'leave') leave++;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'card history-card mb-3';
+                card.onclick = () => viewHistoryDetails(date);
+                card.innerHTML = `
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h5 class="mb-0"><i class="bi bi-calendar3"></i> ${new Date(date).toLocaleDateString()}</h5>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <span class="badge bg-success fs-6">Present: ${present}</span>
+                                    </div>
+                                    <div class="col-4">
+                                        <span class="badge bg-danger fs-6">Absent: ${absent}</span>
+                                    </div>
+                                    <div class="col-4">
+                                        <span class="badge bg-warning fs-6">Leave: ${leave}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                historyList.appendChild(card);
+            });
+        }
+
+        function loadStatistics() {
+            const statsContent = document.getElementById('statsContent');
+            const studentStats = students.map(student => {
+                let present = 0, absent = 0, leave = 0, total = 0;
+                
+                for (let date in attendanceHistory) {
+                    const status = attendanceHistory[date][student.roll];
+                    if (status === 'present') present++;
+                    else if (status === 'absent') absent++;
+                    else if (status === 'leave') leave++;
+                    if (status) total++;
+                }
+                
+                const percentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+                
+                return {
+                    ...student,
+                    present,
+                    absent,
+                    leave,
+                    total,
+                    percentage: parseFloat(percentage)
+                };
+            }).sort((a, b) => b.percentage - a.percentage);
+            
+            let html = '<div class="row">';
+            
+            studentStats.forEach(stat => {
+                const progressColor = stat.percentage >= 75 ? 'success' : 
+                                     stat.percentage >= 50 ? 'warning' : 'danger';
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold">${stat.name}</h6>
+                                <p class="card-text text-muted small mb-2">${stat.roll}</p>
+                                <div class="progress mb-2" style="height: 25px;">
+                                    <div class="progress-bar bg-${progressColor}" role="progressbar" 
+                                         style="width: ${stat.percentage}%" 
+                                         aria-valuenow="${stat.percentage}" aria-valuemin="0" aria-valuemax="100">
+                                        ${stat.percentage}%
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-success"><i class="bi bi-check-circle"></i> ${stat.present}</span>
+                                    <span class="text-danger"><i class="bi bi-x-circle"></i> ${stat.absent}</span>
+                                    <span class="text-warning"><i class="bi bi-calendar-x"></i> ${stat.leave}</span>
+                                    <span class="text-muted">Total: ${stat.total}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            statsContent.innerHTML = html;
+        }
+
+        if (sessionStorage.getItem('loggedInUser')) {
+            document.getElementById('loginBox').classList.add('d-none');
+            document.getElementById('attendanceBox').classList.remove('d-none');
+            initializeApp();
+        }
+    </script>
+
+</body>
+</html>
+    
